@@ -1,6 +1,9 @@
 use bookmark_adapter::bookmark_shared_adapters::email_templates::EmailBuilder;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 
+pub mod handlers;
+pub mod config;
+
 fn main() {
     let mut consumer = Consumer::from_hosts(vec!["localhost:9092".to_owned()])
         .with_topic_partitions("bookmark".to_owned(), &[0, 1])
@@ -10,11 +13,11 @@ fn main() {
         .create()
         .unwrap();
     loop {
-        for ms in consumer.poll().unwrap().iter() {
-            for m in ms.messages() {
-                println!("{:#?}", bincode::deserialize::<EmailBuilder>(m.value));
+        for payload in consumer.poll().unwrap().iter() {
+            for data in payload.messages() {
+                println!("{:#?}", bincode::deserialize::<EmailBuilder>(data.value));
             }
-            let _ = consumer.consume_messageset(ms);
+            let _ = consumer.consume_messageset(payload);
         }
         consumer.commit_consumed().unwrap();
     }
